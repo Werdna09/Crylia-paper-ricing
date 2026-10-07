@@ -7,13 +7,196 @@ PopupWindow {
     required property Item anchorItem
     required property var mediaService
 
+
+    /*
+     * ============================================================
+     * PLAYER
+     * ============================================================
+     */
+
     readonly property var player:
         mediaService.player
 
+
     readonly property bool hasPlayer:
         player !== null
+        && player !== undefined
+
+
+    /*
+     * ============================================================
+     * SAFE METADATA
+     *
+     * MPRIS player se může za běhu změnit nebo úplně zmizet.
+     * Do UI proto neposíláme přímé player.* bindingy.
+     * ============================================================
+     */
+
+    readonly property string safeTitle: {
+        const p = root.player
+
+        if (p === null || p === undefined) {
+            return ""
+        }
+
+        return p.trackTitle || ""
+    }
+
+
+    readonly property string safeArtist: {
+        const p = root.player
+
+        if (p === null || p === undefined) {
+            return ""
+        }
+
+        return p.trackArtist || ""
+    }
+
+
+    readonly property string safeAlbum: {
+        const p = root.player
+
+        if (p === null || p === undefined) {
+            return ""
+        }
+
+        return p.trackAlbum || ""
+    }
+
+
+    readonly property string safeArtUrl: {
+        const p = root.player
+
+        if (p === null || p === undefined) {
+            return ""
+        }
+
+        return p.trackArtUrl || ""
+    }
+
+
+    readonly property string safeIdentity: {
+        const p = root.player
+
+        if (p === null || p === undefined) {
+            return ""
+        }
+
+        return p.identity || ""
+    }
+
+
+    /*
+     * ============================================================
+     * SAFE PLAYER STATE
+     * ============================================================
+     */
+
+    readonly property bool playing: {
+        const p = root.player
+
+        return p !== null
+            && p !== undefined
+            && p.isPlaying
+    }
+
+
+    readonly property bool positionSupported: {
+        const p = root.player
+
+        return p !== null
+            && p !== undefined
+            && p.positionSupported
+    }
+
+
+    readonly property bool lengthSupported: {
+        const p = root.player
+
+        return p !== null
+            && p !== undefined
+            && p.lengthSupported
+    }
+
+
+    readonly property bool canSeek: {
+        const p = root.player
+
+        return p !== null
+            && p !== undefined
+            && p.canSeek
+    }
+
+
+    readonly property bool canGoPrevious: {
+        const p = root.player
+
+        return p !== null
+            && p !== undefined
+            && p.canGoPrevious
+    }
+
+
+    readonly property bool canGoNext: {
+        const p = root.player
+
+        return p !== null
+            && p !== undefined
+            && p.canGoNext
+    }
+
+
+    readonly property bool canTogglePlaying: {
+        const p = root.player
+
+        return p !== null
+            && p !== undefined
+            && p.canTogglePlaying
+    }
+
+
+    readonly property bool canRaise: {
+        const p = root.player
+
+        return p !== null
+            && p !== undefined
+            && p.canRaise
+    }
+
+
+    readonly property real trackLength: {
+        const p = root.player
+
+        if (
+            p === null
+            || p === undefined
+            || !p.lengthSupported
+        ) {
+            return 0
+        }
+
+        const value = Number(p.length)
+
+        if (
+            !isFinite(value)
+            || value <= 0
+        ) {
+            return 0
+        }
+
+        return value
+    }
+
 
     property real currentPosition: 0
+
+
+    /*
+     * ============================================================
+     * WINDOW
+     * ============================================================
+     */
 
     implicitWidth: 440
     implicitHeight: 300
@@ -22,8 +205,13 @@ PopupWindow {
     grabFocus: true
 
     anchor.item: root.anchorItem
-    anchor.edges: Edges.Bottom | Edges.Right
-    anchor.gravity: Edges.Bottom | Edges.Left
+
+    anchor.edges:
+        Edges.Bottom | Edges.Right
+
+    anchor.gravity:
+        Edges.Bottom | Edges.Left
+
     anchor.margins.top: 7
 
 
@@ -45,7 +233,9 @@ PopupWindow {
             Math.floor(seconds)
 
         const hours =
-            Math.floor(value / 3600)
+            Math.floor(
+                value / 3600
+            )
 
         const minutes =
             Math.floor(
@@ -54,6 +244,7 @@ PopupWindow {
 
         const secs =
             value % 60
+
 
         if (hours > 0) {
             return hours
@@ -65,6 +256,7 @@ PopupWindow {
                     .padStart(2, "0")
         }
 
+
         return minutes
             + ":"
             + String(secs)
@@ -73,29 +265,62 @@ PopupWindow {
 
 
     function refreshPosition() {
+        const p =
+            root.player
+
         if (
-            !root.hasPlayer
-            || !root.player.positionSupported
+            p === null
+            || p === undefined
+            || !p.positionSupported
         ) {
             root.currentPosition = 0
+
             return
         }
 
+
+        const value =
+            Number(p.position)
+
+
         root.currentPosition =
-            root.player.position
+            isFinite(value)
+            && value >= 0
+                ? value
+                : 0
     }
 
 
-    function seekFromMouse(mouseX, trackWidth) {
+    function seekFromMouse(
+        mouseX,
+        trackWidth
+    ) {
+        const p =
+            root.player
+
+
         if (
-            !root.hasPlayer
-            || !root.player.canSeek
-            || !root.player.positionSupported
-            || !root.player.lengthSupported
-            || root.player.length <= 0
+            p === null
+            || p === undefined
+            || !p.canSeek
+            || !p.positionSupported
+            || !p.lengthSupported
         ) {
             return
         }
+
+
+        const length =
+            Number(p.length)
+
+
+        if (
+            !isFinite(length)
+            || length <= 0
+        ) {
+            return
+        }
+
 
         const ratio =
             Math.max(
@@ -106,20 +331,43 @@ PopupWindow {
                 )
             )
 
-        const newPosition =
-            root.player.length * ratio
 
-        root.player.position =
+        const newPosition =
+            length * ratio
+
+
+        p.position =
             newPosition
+
 
         root.currentPosition =
             newPosition
     }
 
 
+    function raisePlayer() {
+        const p =
+            root.player
+
+        if (
+            p === null
+            || p === undefined
+            || !p.canRaise
+        ) {
+            return
+        }
+
+        p.raise()
+    }
+
+
     /*
-     * MPRIS position is intentionally not pushed every second
-     * by Quickshell, so we read it while this popup is visible.
+     * ============================================================
+     * POSITION TIMER
+     *
+     * MPRIS position se záměrně neposílá jako nový údaj
+     * několikrát za sekundu. Čteme ji pouze při otevřeném popupu.
+     * ============================================================
      */
 
     Timer {
@@ -128,14 +376,20 @@ PopupWindow {
 
         running:
             root.visible
-            && root.hasPlayer
-            && root.player.positionSupported
+            && root.positionSupported
+
 
         onTriggered: {
             root.refreshPosition()
         }
     }
 
+
+    /*
+     * ============================================================
+     * POPUP CONTENT
+     * ============================================================
+     */
 
     Rectangle {
         anchors.fill: parent
@@ -169,7 +423,9 @@ PopupWindow {
 
             color: "#e1e3e4"
 
-            font.family: "JetBrains Mono"
+            font.family:
+                "JetBrains Mono"
+
             font.pixelSize: 15
             font.bold: true
         }
@@ -185,13 +441,15 @@ PopupWindow {
             }
 
             text:
-                root.hasPlayer
-                    ? root.player.identity
+                root.safeIdentity !== ""
+                    ? root.safeIdentity
                     : "No player"
 
             color: "#7e8294"
 
-            font.family: "JetBrains Mono"
+            font.family:
+                "JetBrains Mono"
+
             font.pixelSize: 9
             font.bold: true
         }
@@ -228,13 +486,10 @@ PopupWindow {
                 anchors.fill: parent
 
                 visible:
-                    root.hasPlayer
-                    && root.player.trackArtUrl.length > 0
+                    root.safeArtUrl !== ""
 
                 source:
-                    root.hasPlayer
-                        ? root.player.trackArtUrl
-                        : ""
+                    root.safeArtUrl
 
                 fillMode:
                     Image.PreserveAspectCrop
@@ -248,14 +503,15 @@ PopupWindow {
                 anchors.centerIn: parent
 
                 visible:
-                    !root.hasPlayer
-                    || root.player.trackArtUrl.length === 0
+                    root.safeArtUrl === ""
 
                 text: "♪"
 
                 color: "#bb97ee"
 
-                font.family: "JetBrains Mono"
+                font.family:
+                    "JetBrains Mono"
+
                 font.pixelSize: 38
                 font.bold: true
             }
@@ -285,20 +541,18 @@ PopupWindow {
                 width: parent.width
 
                 text:
-                    root.hasPlayer
-                        ? (
-                            root.player.trackTitle.length > 0
-                                ? root.player.trackTitle
-                                : "Unknown title"
-                        )
-                        : "Nothing playing"
+                    root.safeTitle !== ""
+                        ? root.safeTitle
+                        : "Unknown title"
 
                 elide:
                     Text.ElideRight
 
                 color: "#e1e3e4"
 
-                font.family: "JetBrains Mono"
+                font.family:
+                    "JetBrains Mono"
+
                 font.pixelSize: 14
                 font.bold: true
             }
@@ -308,20 +562,18 @@ PopupWindow {
                 width: parent.width
 
                 text:
-                    root.hasPlayer
-                        ? (
-                            root.player.trackArtist.length > 0
-                                ? root.player.trackArtist
-                                : "Unknown artist"
-                        )
-                        : "—"
+                    root.safeArtist !== ""
+                        ? root.safeArtist
+                        : "Unknown artist"
 
                 elide:
                     Text.ElideRight
 
                 color: "#bb97ee"
 
-                font.family: "JetBrains Mono"
+                font.family:
+                    "JetBrains Mono"
+
                 font.pixelSize: 11
                 font.bold: true
             }
@@ -331,37 +583,36 @@ PopupWindow {
                 width: parent.width
 
                 text:
-                    root.hasPlayer
-                        ? (
-                            root.player.trackAlbum.length > 0
-                                ? root.player.trackAlbum
-                                : "Unknown album"
-                        )
-                        : ""
+                    root.safeAlbum !== ""
+                        ? root.safeAlbum
+                        : "Unknown album"
 
                 elide:
                     Text.ElideRight
 
                 color: "#7e8294"
 
-                font.family: "JetBrains Mono"
+                font.family:
+                    "JetBrains Mono"
+
                 font.pixelSize: 10
             }
 
 
             /*
-             * Player state
+             * PLAYER STATE
              */
 
             Rectangle {
-                width: stateText.width + 16
+                width:
+                    stateText.width + 16
+
                 height: 24
 
                 radius: 5
 
                 color:
-                    root.hasPlayer
-                    && root.player.isPlaying
+                    root.playing
                         ? "#394634"
                         : "#333648"
 
@@ -374,17 +625,18 @@ PopupWindow {
                     text:
                         !root.hasPlayer
                             ? "NO PLAYER"
-                            : root.player.isPlaying
+                            : root.playing
                                 ? "PLAYING"
                                 : "PAUSED"
 
                     color:
-                        root.hasPlayer
-                        && root.player.isPlaying
+                        root.playing
                             ? "#9ed06c"
                             : "#7e8294"
 
-                    font.family: "JetBrains Mono"
+                    font.family:
+                        "JetBrains Mono"
+
                     font.pixelSize: 9
                     font.bold: true
                 }
@@ -418,6 +670,10 @@ PopupWindow {
             color: "#393e53"
 
 
+            /*
+             * PROGRESS FILL
+             */
+
             Rectangle {
                 anchors {
                     top: parent.top
@@ -426,16 +682,14 @@ PopupWindow {
                 }
 
                 width:
-                    root.hasPlayer
-                    && root.player.lengthSupported
-                    && root.player.length > 0
+                    root.trackLength > 0
                         ? parent.width
                             * Math.max(
                                 0,
                                 Math.min(
                                     1,
                                     root.currentPosition
-                                    / root.player.length
+                                    / root.trackLength
                                 )
                             )
                         : 0
@@ -446,11 +700,13 @@ PopupWindow {
             }
 
 
+            /*
+             * PROGRESS KNOB
+             */
+
             Rectangle {
                 visible:
-                    root.hasPlayer
-                    && root.player.lengthSupported
-                    && root.player.length > 0
+                    root.trackLength > 0
 
                 width: 14
                 height: 14
@@ -461,22 +717,28 @@ PopupWindow {
                     parent.verticalCenter
 
                 x:
-                    Math.max(
-                        0,
-                        Math.min(
-                            progressTrack.width - width,
-                            (
-                                progressTrack.width
-                                * root.currentPosition
-                                / root.player.length
+                    root.trackLength > 0
+                        ? Math.max(
+                            0,
+                            Math.min(
+                                progressTrack.width - width,
+                                (
+                                    progressTrack.width
+                                    * root.currentPosition
+                                    / root.trackLength
+                                )
+                                - width / 2
                             )
-                            - width / 2
                         )
-                    )
+                        : 0
 
                 color: "#e1e3e4"
             }
 
+
+            /*
+             * SEEK INPUT
+             */
 
             MouseArea {
                 anchors {
@@ -489,9 +751,9 @@ PopupWindow {
                 height: 28
 
                 enabled:
-                    root.hasPlayer
-                    && root.player.canSeek
-                    && root.player.positionSupported
+                    root.canSeek
+                    && root.positionSupported
+                    && root.trackLength > 0
 
                 cursorShape:
                     enabled
@@ -520,7 +782,9 @@ PopupWindow {
 
 
         /*
+         * ========================================================
          * TIME
+         * ========================================================
          */
 
         Text {
@@ -532,8 +796,7 @@ PopupWindow {
             }
 
             text:
-                root.hasPlayer
-                && root.player.positionSupported
+                root.positionSupported
                     ? root.formatTime(
                         root.currentPosition
                     )
@@ -541,7 +804,9 @@ PopupWindow {
 
             color: "#7e8294"
 
-            font.family: "JetBrains Mono"
+            font.family:
+                "JetBrains Mono"
+
             font.pixelSize: 9
         }
 
@@ -555,16 +820,17 @@ PopupWindow {
             }
 
             text:
-                root.hasPlayer
-                && root.player.lengthSupported
+                root.trackLength > 0
                     ? root.formatTime(
-                        root.player.length
+                        root.trackLength
                     )
                     : "--:--"
 
             color: "#7e8294"
 
-            font.family: "JetBrains Mono"
+            font.family:
+                "JetBrains Mono"
+
             font.pixelSize: 9
         }
 
@@ -602,8 +868,7 @@ PopupWindow {
                 radius: 6
 
                 color:
-                    root.hasPlayer
-                    && root.player.canGoPrevious
+                    root.canGoPrevious
                         ? "#333648"
                         : "#252630"
 
@@ -614,12 +879,13 @@ PopupWindow {
                     text: "◀"
 
                     color:
-                        root.hasPlayer
-                        && root.player.canGoPrevious
+                        root.canGoPrevious
                             ? "#e1e3e4"
                             : "#5a5e7a"
 
-                    font.family: "JetBrains Mono"
+                    font.family:
+                        "JetBrains Mono"
+
                     font.pixelSize: 13
                     font.bold: true
                 }
@@ -629,13 +895,13 @@ PopupWindow {
                     anchors.fill: parent
 
                     enabled:
-                        root.hasPlayer
-                        && root.player.canGoPrevious
+                        root.canGoPrevious
 
                     cursorShape:
                         enabled
                             ? Qt.PointingHandCursor
                             : Qt.ArrowCursor
+
 
                     onClicked: {
                         root.mediaService.previous()
@@ -666,7 +932,7 @@ PopupWindow {
                     text:
                         !root.hasPlayer
                             ? "—"
-                            : root.player.isPlaying
+                            : root.playing
                                 ? "PAUSE"
                                 : "PLAY"
 
@@ -675,7 +941,9 @@ PopupWindow {
                             ? "#181a1c"
                             : "#7e8294"
 
-                    font.family: "JetBrains Mono"
+                    font.family:
+                        "JetBrains Mono"
+
                     font.pixelSize: 10
                     font.bold: true
                 }
@@ -685,13 +953,13 @@ PopupWindow {
                     anchors.fill: parent
 
                     enabled:
-                        root.hasPlayer
-                        && root.player.canTogglePlaying
+                        root.canTogglePlaying
 
                     cursorShape:
                         enabled
                             ? Qt.PointingHandCursor
                             : Qt.ArrowCursor
+
 
                     onClicked: {
                         root.mediaService.togglePlaying()
@@ -711,8 +979,7 @@ PopupWindow {
                 radius: 6
 
                 color:
-                    root.hasPlayer
-                    && root.player.canGoNext
+                    root.canGoNext
                         ? "#333648"
                         : "#252630"
 
@@ -723,12 +990,13 @@ PopupWindow {
                     text: "▶"
 
                     color:
-                        root.hasPlayer
-                        && root.player.canGoNext
+                        root.canGoNext
                             ? "#e1e3e4"
                             : "#5a5e7a"
 
-                    font.family: "JetBrains Mono"
+                    font.family:
+                        "JetBrains Mono"
+
                     font.pixelSize: 13
                     font.bold: true
                 }
@@ -738,13 +1006,13 @@ PopupWindow {
                     anchors.fill: parent
 
                     enabled:
-                        root.hasPlayer
-                        && root.player.canGoNext
+                        root.canGoNext
 
                     cursorShape:
                         enabled
                             ? Qt.PointingHandCursor
                             : Qt.ArrowCursor
+
 
                     onClicked: {
                         root.mediaService.next()
@@ -764,8 +1032,7 @@ PopupWindow {
                 radius: 6
 
                 color:
-                    root.hasPlayer
-                    && root.player.canRaise
+                    root.canRaise
                         ? "#354157"
                         : "#252630"
 
@@ -776,12 +1043,13 @@ PopupWindow {
                     text: "PLAYER"
 
                     color:
-                        root.hasPlayer
-                        && root.player.canRaise
+                        root.canRaise
                             ? "#6dcae8"
                             : "#5a5e7a"
 
-                    font.family: "JetBrains Mono"
+                    font.family:
+                        "JetBrains Mono"
+
                     font.pixelSize: 9
                     font.bold: true
                 }
@@ -791,16 +1059,16 @@ PopupWindow {
                     anchors.fill: parent
 
                     enabled:
-                        root.hasPlayer
-                        && root.player.canRaise
+                        root.canRaise
 
                     cursorShape:
                         enabled
                             ? Qt.PointingHandCursor
                             : Qt.ArrowCursor
 
+
                     onClicked: {
-                        root.player.raise()
+                        root.raisePlayer()
                     }
                 }
             }
@@ -809,7 +1077,20 @@ PopupWindow {
 
 
     /*
-     * Refresh position immediately when opened.
+     * ============================================================
+     * PLAYER CHANGES
+     * ============================================================
+     */
+
+    onPlayerChanged: {
+        root.refreshPosition()
+    }
+
+
+    /*
+     * ============================================================
+     * POPUP OPEN
+     * ============================================================
      */
 
     onVisibleChanged: {

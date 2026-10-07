@@ -5,7 +5,7 @@ import Quickshell
 
 import qs.services
 import qs.popups
-
+import qs.components
 
 ShellRoot {
     /*
@@ -55,6 +55,8 @@ ShellRoot {
         precision: SystemClock.Minutes
     }
 
+    BottomDock{
+    }
 
     /*
      * ============================================================
