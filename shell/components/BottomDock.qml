@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Widgets
 
+import qs.popups
 
 Scope {
     id: root
@@ -26,7 +27,7 @@ Scope {
             lookup: "firefox",
 
             fallbackIcon:
-                "firefox",
+            "firefox",
 
             command: [
                 "firefox"
@@ -42,10 +43,10 @@ Scope {
             ],
 
             lookup:
-                "org.kde.dolphin",
+            "org.kde.dolphin",
 
             fallbackIcon:
-                "system-file-manager",
+            "system-file-manager",
 
             command: [
                 "dolphin"
@@ -60,10 +61,10 @@ Scope {
             ],
 
             lookup:
-                "Alacritty",
+            "Alacritty",
 
             fallbackIcon:
-                "utilities-terminal",
+            "utilities-terminal",
 
             command: [
                 "alacritty"
@@ -80,30 +81,30 @@ Scope {
 
     function normalizeKey(value) {
         let result =
-            String(value || "").trim()
+        String(value || "").trim()
 
 
         const slash =
-            result.lastIndexOf("/")
+        result.lastIndexOf("/")
 
 
         if (slash >= 0) {
             result =
-                result.substring(
-                    slash + 1
-                )
+            result.substring(
+                slash + 1
+            )
         }
 
 
         if (
             result.toLowerCase()
-                .endsWith(".desktop")
+            .endsWith(".desktop")
         ) {
             result =
-                result.substring(
-                    0,
-                    result.length - 8
-                )
+            result.substring(
+                0,
+                result.length - 8
+            )
         }
 
 
@@ -124,13 +125,13 @@ Scope {
 
 
         const key =
-            root.normalizeKey(
-                running.key
-            )
+        root.normalizeKey(
+            running.key
+        )
 
 
         const matches =
-            pinned.matchKeys || []
+        pinned.matchKeys || []
 
 
         for (
@@ -172,7 +173,7 @@ Scope {
 
         function addCandidate(value) {
             const raw =
-                String(value || "").trim()
+            String(value || "").trim()
 
 
             if (raw === "") {
@@ -190,10 +191,10 @@ Scope {
 
             if (
                 !raw.toLowerCase()
-                    .endsWith(".desktop")
+                .endsWith(".desktop")
             ) {
                 const withDesktop =
-                    raw + ".desktop"
+                raw + ".desktop"
 
 
                 if (
@@ -236,9 +237,9 @@ Scope {
             i++
         ) {
             const entry =
-                DesktopEntries.byId(
-                    candidates[i]
-                )
+            DesktopEntries.byId(
+                candidates[i]
+            )
 
 
             if (entry !== null) {
@@ -266,10 +267,10 @@ Scope {
             i++
         ) {
             const value =
-                String(
-                    heuristicCandidates[i]
-                    || ""
-                )
+            String(
+                heuristicCandidates[i]
+                || ""
+            )
 
 
             if (value === "") {
@@ -278,10 +279,10 @@ Scope {
 
 
             const entry =
-                DesktopEntries
-                    .heuristicLookup(
-                        value
-                    )
+            DesktopEntries
+            .heuristicLookup(
+                value
+            )
 
 
             if (entry !== null) {
@@ -340,8 +341,8 @@ Scope {
 
     function buildDockApps() {
         const runningApps =
-            root.windowService.applications
-            || []
+        root.windowService.applications
+        || []
 
         const result = []
 
@@ -360,10 +361,10 @@ Scope {
             p++
         ) {
             const pinned =
-                root.pinnedApps[p]
+            root.pinnedApps[p]
 
             let running =
-                null
+            null
 
 
             for (
@@ -378,7 +379,7 @@ Scope {
                     )
                 ) {
                     running =
-                        runningApps[r]
+                    runningApps[r]
 
                     break
                 }
@@ -393,107 +394,107 @@ Scope {
 
                 result.push({
                     key:
-                        pinned.key,
+                    pinned.key,
 
                     pinned:
-                        true,
+                    true,
 
                     running:
-                        true,
+                    true,
 
                     active:
-                        running.active,
+                    running.active,
 
                     minimized:
-                        running.minimized,
+                    running.minimized,
 
                     windowCount:
-                        running.windowCount,
+                    running.windowCount,
 
                     activeWindowId:
-                        running.activeWindowId,
+                    running.activeWindowId,
 
                     representativeId:
-                        running.representativeId,
+                    running.representativeId,
 
                     desktopFile:
-                        running.desktopFile,
+                    running.desktopFile,
 
                     resourceClass:
-                        running.resourceClass,
+                    running.resourceClass,
 
                     caption:
-                        running.caption,
+                    running.caption,
 
                     lookup:
-                        pinned.lookup,
+                    pinned.lookup,
 
                     fallbackIcon:
-                        pinned.fallbackIcon,
+                    pinned.fallbackIcon,
 
                     command:
-                        pinned.command,
+                    pinned.command,
 
                     signature:
-                        pinned.key
-                        + "|1|"
-                        + running.active
-                        + "|"
-                        + running.minimized
-                        + "|"
-                        + running.windowCount
-                        + "|"
-                        + running.activeWindowId
-                        + "|"
-                        + running.representativeId
+                    pinned.key
+                    + "|1|"
+                    + running.active
+                    + "|"
+                    + running.minimized
+                    + "|"
+                    + running.windowCount
+                    + "|"
+                    + running.activeWindowId
+                    + "|"
+                    + running.representativeId
                 })
             } else {
                 result.push({
                     key:
-                        pinned.key,
+                    pinned.key,
 
                     pinned:
-                        true,
+                    true,
 
                     running:
-                        false,
+                    false,
 
                     active:
-                        false,
+                    false,
 
                     minimized:
-                        false,
+                    false,
 
                     windowCount:
-                        0,
+                    0,
 
                     activeWindowId:
-                        "",
+                    "",
 
                     representativeId:
-                        "",
+                    "",
 
                     desktopFile:
-                        pinned.lookup,
+                    pinned.lookup,
 
                     resourceClass:
-                        "",
+                    "",
 
                     caption:
-                        "",
+                    "",
 
                     lookup:
-                        pinned.lookup,
+                    pinned.lookup,
 
                     fallbackIcon:
-                        pinned.fallbackIcon,
+                    pinned.fallbackIcon,
 
                     command:
-                        pinned.command,
+                    pinned.command,
 
                     signature:
-                        pinned.key
-                        + "|0"
+                    pinned.key
+                    + "|0"
                 })
             }
         }
@@ -511,7 +512,7 @@ Scope {
             i++
         ) {
             const running =
-                runningApps[i]
+            runningApps[i]
 
 
             if (
@@ -525,59 +526,59 @@ Scope {
 
             result.push({
                 key:
-                    running.key,
+                running.key,
 
                 pinned:
-                    false,
+                false,
 
                 running:
-                    true,
+                true,
 
                 active:
-                    running.active,
+                running.active,
 
                 minimized:
-                    running.minimized,
+                running.minimized,
 
                 windowCount:
-                    running.windowCount,
+                running.windowCount,
 
                 activeWindowId:
-                    running.activeWindowId,
+                running.activeWindowId,
 
                 representativeId:
-                    running.representativeId,
+                running.representativeId,
 
                 desktopFile:
-                    running.desktopFile,
+                running.desktopFile,
 
                 resourceClass:
-                    running.resourceClass,
+                running.resourceClass,
 
                 caption:
-                    running.caption,
+                running.caption,
 
                 lookup:
-                    running.desktopFile,
+                running.desktopFile,
 
                 fallbackIcon:
-                    "application-x-executable",
+                "application-x-executable",
 
                 command:
-                    [],
+                [],
 
                 signature:
-                    running.key
-                    + "|1|"
-                    + running.active
-                    + "|"
-                    + running.minimized
-                    + "|"
-                    + running.windowCount
-                    + "|"
-                    + running.activeWindowId
-                    + "|"
-                    + running.representativeId
+                running.key
+                + "|1|"
+                + running.active
+                + "|"
+                + running.minimized
+                + "|"
+                + running.windowCount
+                + "|"
+                + running.activeWindowId
+                + "|"
+                + running.representativeId
             })
         }
 
@@ -600,7 +601,7 @@ Scope {
             desktopEntry.execute()
 
             root.windowService
-                .refreshSoon(650)
+            .refreshSoon(650)
 
             return
         }
@@ -617,7 +618,7 @@ Scope {
 
 
             root.windowService
-                .refreshSoon(650)
+            .refreshSoon(650)
         }
     }
 
@@ -630,7 +631,7 @@ Scope {
 
     function closeWindow(windowId) {
         const id =
-            String(windowId || "")
+        String(windowId || "")
 
 
         if (id === "") {
@@ -646,7 +647,7 @@ Scope {
 
 
         root.windowService
-            .refreshSoon(350)
+        .refreshSoon(350)
     }
 
 
@@ -702,7 +703,7 @@ Scope {
             color: "transparent"
 
             exclusionMode:
-                ExclusionMode.Ignore
+            ExclusionMode.Ignore
 
             aboveWindows: true
             focusable: false
@@ -719,10 +720,10 @@ Scope {
                 y: dockSurface.y
 
                 width:
-                    dockSurface.width
+                dockSurface.width
 
                 height:
-                    dockSurface.height
+                dockSurface.height
 
                 radius: 11
 
@@ -731,14 +732,14 @@ Scope {
                     x: 0
 
                     y:
-                        dockWindow.implicitHeight
-                        - edgeTrigger.height
+                    dockWindow.implicitHeight
+                    - edgeTrigger.height
 
                     width:
-                        dockWindow.width
+                    dockWindow.width
 
                     height:
-                        edgeTrigger.height
+                    edgeTrigger.height
                 }
             }
 
@@ -799,8 +800,8 @@ Scope {
                 x: 0
 
                 y:
-                    parent.height
-                    - height
+                parent.height
+                - height
 
                 width: parent.width
                 height: 3
@@ -834,26 +835,26 @@ Scope {
 
 
                 width:
-                    dockRow.width + 18
+                dockRow.width + 18
 
                 height: 64
 
 
                 x:
-                    Math.round(
-                        (
-                            parent.width
-                            - width
-                        ) / 2
-                    )
+                Math.round(
+                    (
+                        parent.width
+                        - width
+                    ) / 2
+                )
 
 
                 y:
-                    dockWindow.shown
-                        ? 8
-                        : dockWindow
-                            .implicitHeight
-                            + 6
+                dockWindow.shown
+                ? 8
+                : dockWindow
+                .implicitHeight
+                + 6
 
 
                 radius: 11
@@ -869,7 +870,7 @@ Scope {
                         duration: 180
 
                         easing.type:
-                            Easing.OutCubic
+                        Easing.OutCubic
                     }
                 }
 
@@ -879,7 +880,7 @@ Scope {
                         duration: 160
 
                         easing.type:
-                            Easing.OutCubic
+                        Easing.OutCubic
                     }
                 }
 
@@ -908,10 +909,10 @@ Scope {
                     id: dockModel
 
                     values:
-                        root.buildDockApps()
+                    root.buildDockApps()
 
                     objectProp:
-                        "signature"
+                    "signature"
                 }
 
 
@@ -928,6 +929,138 @@ Scope {
 
                     spacing: 6
 
+                    /*
+                     * =====================================
+                     * CRYLIA LAUNCHER
+                     * =====================================
+                     */
+
+                    Rectangle {
+                        id: launcherButton
+
+                        width: 54
+                        height: 54
+
+                        radius: 8
+
+                        color:
+                        launcherPopup.visible
+                        ? "#423f59"
+                        : launcherMouse.containsMouse
+                        ? "#393e53"
+                        : "transparent"
+
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 100
+                            }
+                        }
+
+
+                        /*
+                         * Temporary logo.
+                         *
+                         * Tohle potom nahradíme
+                         * naším crylia.svg.
+                         */
+
+                        Rectangle {
+                            anchors.centerIn: parent
+
+                            width:
+                            launcherMouse.containsMouse
+                            ? 40
+                            : 36
+
+                            height: width
+
+                            radius: 9
+
+                            color: "#423f59"
+
+                            border.width: 1
+                            border.color: "#5a5e7a"
+
+
+                            Behavior on width {
+                                NumberAnimation {
+                                    duration: 110
+                                    easing.type:
+                                    Easing.OutCubic
+                                }
+                            }
+
+
+                            Behavior on height {
+                                NumberAnimation {
+                                    duration: 110
+                                    easing.type:
+                                    Easing.OutCubic
+                                }
+                            }
+
+
+                            Text {
+                                anchors.centerIn: parent
+
+                                text: "C"
+
+                                color: "#bb97ee"
+
+                                font.family:
+                                "JetBrains Mono"
+
+                                font.pixelSize: 20
+                                font.bold: true
+                            }
+                        }
+
+
+                        MouseArea {
+                            id: launcherMouse
+
+                            anchors.fill: parent
+
+                            hoverEnabled: true
+
+                            cursorShape:
+                            Qt.PointingHandCursor
+
+
+                            onClicked: {
+                                launcherPopup.visible =
+                                !launcherPopup.visible
+                            }
+                        }
+
+
+                        CryliaLauncher {
+                            id: launcherPopup
+
+                            anchorItem:
+                            launcherButton
+
+                            visible: false
+                        }
+                    }
+
+
+                    /*
+                     * =====================================
+                     * SEPARATOR
+                     * =====================================
+                     */
+
+                    Rectangle {
+                        anchors.verticalCenter:
+                        parent.verticalCenter
+
+                        width: 1
+                        height: 32
+
+                        color: "#3f445b"
+                    }
 
                     Repeater {
                         model: dockModel
@@ -946,30 +1079,30 @@ Scope {
                              */
 
                             readonly property var desktopEntry:
-                                root.desktopEntryFor(
-                                    modelData
-                                )
+                            root.desktopEntryFor(
+                                modelData
+                            )
 
 
                             readonly property string appName:
-                                root.displayNameFor(
-                                    modelData,
-                                    desktopEntry
-                                )
+                            root.displayNameFor(
+                                modelData,
+                                desktopEntry
+                            )
 
 
                             readonly property string iconName:
-                                desktopEntry !== null
-                                && desktopEntry.icon
-                                    ? desktopEntry.icon
-                                    : modelData.fallbackIcon
+                            desktopEntry !== null
+                            && desktopEntry.icon
+                            ? desktopEntry.icon
+                            : modelData.fallbackIcon
 
 
                             readonly property string targetWindowId:
-                                modelData.active
-                                && modelData.activeWindowId !== ""
-                                    ? modelData.activeWindowId
-                                    : modelData.representativeId
+                            modelData.active
+                            && modelData.activeWindowId !== ""
+                            ? modelData.activeWindowId
+                            : modelData.representativeId
 
 
                             /*
@@ -991,11 +1124,11 @@ Scope {
                              */
 
                             color:
-                                modelData.active
-                                    ? "#393e53"
-                                    : appMouse.containsMouse
-                                        ? "#363a4e"
-                                        : "transparent"
+                            modelData.active
+                            ? "#393e53"
+                            : appMouse.containsMouse
+                            ? "#363a4e"
+                            : "transparent"
 
 
                             Behavior on color {
@@ -1014,36 +1147,36 @@ Scope {
                             IconImage {
                                 anchors {
                                     horizontalCenter:
-                                        parent.horizontalCenter
+                                    parent.horizontalCenter
 
                                     verticalCenter:
-                                        parent.verticalCenter
+                                    parent.verticalCenter
 
                                     verticalCenterOffset:
-                                        -2
+                                    -2
                                 }
 
 
                                 implicitSize:
-                                    appMouse.containsMouse
-                                        ? 40
-                                        : modelData.active
-                                            ? 39
-                                            : 36
+                                appMouse.containsMouse
+                                ? 40
+                                : modelData.active
+                                ? 39
+                                : 36
 
 
                                 source:
-                                    Quickshell.iconPath(
-                                        appButton.iconName,
-                                        "application-x-executable"
-                                    )
+                                Quickshell.iconPath(
+                                    appButton.iconName,
+                                    "application-x-executable"
+                                )
 
 
                                 opacity:
-                                    modelData.running
-                                    && modelData.minimized
-                                        ? 0.60
-                                        : 1.0
+                                modelData.running
+                                && modelData.minimized
+                                ? 0.60
+                                : 1.0
 
 
                                 Behavior on implicitSize {
@@ -1051,7 +1184,7 @@ Scope {
                                         duration: 110
 
                                         easing.type:
-                                            Easing.OutCubic
+                                        Easing.OutCubic
                                     }
                                 }
 
@@ -1072,7 +1205,7 @@ Scope {
 
                             Rectangle {
                                 visible:
-                                    modelData.windowCount > 1
+                                modelData.windowCount > 1
 
                                 anchors {
                                     top: parent.top
@@ -1094,12 +1227,12 @@ Scope {
                                     anchors.centerIn: parent
 
                                     text:
-                                        modelData.windowCount
+                                    modelData.windowCount
 
                                     color: "#bb97ee"
 
                                     font.family:
-                                        "JetBrains Mono"
+                                    "JetBrains Mono"
 
                                     font.pixelSize: 8
                                     font.bold: true
@@ -1116,36 +1249,36 @@ Scope {
                             Rectangle {
                                 anchors {
                                     horizontalCenter:
-                                        parent.horizontalCenter
+                                    parent.horizontalCenter
 
                                     bottom:
-                                        parent.bottom
+                                    parent.bottom
 
                                     bottomMargin: 2
                                 }
 
 
                                 width:
-                                    modelData.active
-                                        ? 24
-                                        : modelData.running
-                                            ? 12
-                                            : 0
+                                modelData.active
+                                ? 24
+                                : modelData.running
+                                ? 12
+                                : 0
 
 
                                 height:
-                                    modelData.active
-                                        ? 3
-                                        : 2
+                                modelData.active
+                                ? 3
+                                : 2
 
 
                                 radius: 2
 
 
                                 color:
-                                    modelData.active
-                                        ? "#6dcae8"
-                                        : "#bb97ee"
+                                modelData.active
+                                ? "#6dcae8"
+                                : "#bb97ee"
 
 
                                 Behavior on width {
@@ -1153,7 +1286,7 @@ Scope {
                                         duration: 140
 
                                         easing.type:
-                                            Easing.OutCubic
+                                        Easing.OutCubic
                                     }
                                 }
 
@@ -1200,34 +1333,34 @@ Scope {
                                 id: tooltipPopup
 
                                 anchor.item:
-                                    appButton
+                                appButton
 
                                 /*
                                  * Popup se otevře NAD ikonou.
                                  */
 
                                 anchor.rect.x:
-                                    Math.round(
-                                        (
-                                            appButton.width
-                                            - implicitWidth
-                                        ) / 2
-                                    )
+                                Math.round(
+                                    (
+                                        appButton.width
+                                        - implicitWidth
+                                    ) / 2
+                                )
 
                                 anchor.rect.y:
-                                    -8
+                                -8
 
                                 anchor.edges:
-                                    Edges.Top
-                                    | Edges.Left
+                                Edges.Top
+                                | Edges.Left
 
                                 anchor.gravity:
-                                    Edges.Top
-                                    | Edges.Right
+                                Edges.Top
+                                | Edges.Right
 
                                 anchor.adjustment:
-                                    PopupAdjustment.SlideX
-                                    | PopupAdjustment.FlipY
+                                PopupAdjustment.SlideX
+                                | PopupAdjustment.FlipY
 
 
                                 implicitWidth: 220
@@ -1268,15 +1401,15 @@ Scope {
                                             width: parent.width
 
                                             text:
-                                                appButton.appName
+                                            appButton.appName
 
                                             elide:
-                                                Text.ElideRight
+                                            Text.ElideRight
 
                                             color: "#e1e3e4"
 
                                             font.family:
-                                                "JetBrains Mono"
+                                            "JetBrains Mono"
 
                                             font.pixelSize: 10
                                             font.bold: true
@@ -1287,23 +1420,23 @@ Scope {
                                             width: parent.width
 
                                             text:
-                                                modelData.running
-                                                    ? modelData.windowCount === 1
-                                                        ? "RUNNING · 1 WINDOW"
-                                                        : "RUNNING · "
-                                                            + modelData.windowCount
-                                                            + " WINDOWS"
-                                                    : "PINNED"
+                                            modelData.running
+                                            ? modelData.windowCount === 1
+                                            ? "RUNNING · 1 WINDOW"
+                                            : "RUNNING · "
+                                            + modelData.windowCount
+                                            + " WINDOWS"
+                                            : "PINNED"
 
                                             color:
-                                                modelData.active
-                                                    ? "#6dcae8"
-                                                    : modelData.running
-                                                        ? "#bb97ee"
-                                                        : "#7e8294"
+                                            modelData.active
+                                            ? "#6dcae8"
+                                            : modelData.running
+                                            ? "#bb97ee"
+                                            : "#7e8294"
 
                                             font.family:
-                                                "JetBrains Mono"
+                                            "JetBrains Mono"
 
                                             font.pixelSize: 8
                                             font.bold: true
@@ -1323,30 +1456,30 @@ Scope {
                                 id: contextMenu
 
                                 anchor.item:
-                                    appButton
+                                appButton
 
                                 anchor.rect.x:
-                                    Math.round(
-                                        (
-                                            appButton.width
-                                            - implicitWidth
-                                        ) / 2
-                                    )
+                                Math.round(
+                                    (
+                                        appButton.width
+                                        - implicitWidth
+                                    ) / 2
+                                )
 
                                 anchor.rect.y:
-                                    -8
+                                -8
 
                                 anchor.edges:
-                                    Edges.Top
-                                    | Edges.Left
+                                Edges.Top
+                                | Edges.Left
 
                                 anchor.gravity:
-                                    Edges.Top
-                                    | Edges.Right
+                                Edges.Top
+                                | Edges.Right
 
                                 anchor.adjustment:
-                                    PopupAdjustment.SlideX
-                                    | PopupAdjustment.FlipY
+                                PopupAdjustment.SlideX
+                                | PopupAdjustment.FlipY
 
 
                                 implicitWidth: 210
@@ -1361,7 +1494,7 @@ Scope {
 
                                 onVisibleChanged: {
                                     dockWindow.contextMenuOpen =
-                                        visible
+                                    visible
 
                                     if (visible) {
                                         tooltipPopup.visible = false
@@ -1421,24 +1554,24 @@ Scope {
 
                                             IconImage {
                                                 anchors.verticalCenter:
-                                                    parent.verticalCenter
+                                                parent.verticalCenter
 
                                                 implicitSize: 24
 
                                                 source:
-                                                    Quickshell.iconPath(
-                                                        appButton.iconName,
-                                                        "application-x-executable"
-                                                    )
+                                                Quickshell.iconPath(
+                                                    appButton.iconName,
+                                                    "application-x-executable"
+                                                )
                                             }
 
 
                                             Column {
                                                 anchors.verticalCenter:
-                                                    parent.verticalCenter
+                                                parent.verticalCenter
 
                                                 width:
-                                                    parent.width - 42
+                                                parent.width - 42
 
                                                 spacing: 1
 
@@ -1447,15 +1580,15 @@ Scope {
                                                     width: parent.width
 
                                                     text:
-                                                        appButton.appName
+                                                    appButton.appName
 
                                                     elide:
-                                                        Text.ElideRight
+                                                    Text.ElideRight
 
                                                     color: "#e1e3e4"
 
                                                     font.family:
-                                                        "JetBrains Mono"
+                                                    "JetBrains Mono"
 
                                                     font.pixelSize: 10
                                                     font.bold: true
@@ -1464,19 +1597,19 @@ Scope {
 
                                                 Text {
                                                     text:
-                                                        modelData.running
-                                                            ? modelData.windowCount
-                                                                + (
-                                                                    modelData.windowCount === 1
-                                                                        ? " WINDOW"
-                                                                        : " WINDOWS"
-                                                                )
-                                                            : "NOT RUNNING"
+                                                    modelData.running
+                                                    ? modelData.windowCount
+                                                    + (
+                                                        modelData.windowCount === 1
+                                                        ? " WINDOW"
+                                                        : " WINDOWS"
+                                                    )
+                                                    : "NOT RUNNING"
 
                                                     color: "#7e8294"
 
                                                     font.family:
-                                                        "JetBrains Mono"
+                                                    "JetBrains Mono"
 
                                                     font.pixelSize: 7
                                                     font.bold: true
@@ -1517,29 +1650,29 @@ Scope {
                                             radius: 5
 
                                             color:
-                                                openMouse.containsMouse
-                                                    ? "#393e53"
-                                                    : "transparent"
+                                            openMouse.containsMouse
+                                            ? "#393e53"
+                                            : "transparent"
 
 
                                             Text {
                                                 anchors {
                                                     left: parent.left
                                                     verticalCenter:
-                                                        parent.verticalCenter
+                                                    parent.verticalCenter
 
                                                     leftMargin: 10
                                                 }
 
                                                 text:
-                                                    modelData.running
-                                                        ? "ACTIVATE"
-                                                        : "OPEN"
+                                                modelData.running
+                                                ? "ACTIVATE"
+                                                : "OPEN"
 
                                                 color: "#e1e3e4"
 
                                                 font.family:
-                                                    "JetBrains Mono"
+                                                "JetBrains Mono"
 
                                                 font.pixelSize: 9
                                                 font.bold: true
@@ -1554,7 +1687,7 @@ Scope {
                                                 hoverEnabled: true
 
                                                 cursorShape:
-                                                    Qt.PointingHandCursor
+                                                Qt.PointingHandCursor
 
 
                                                 onClicked: {
@@ -1565,10 +1698,10 @@ Scope {
                                                         modelData.running
                                                     ) {
                                                         root.windowService
-                                                            .activate(
-                                                                appButton
-                                                                    .targetWindowId
-                                                            )
+                                                        .activate(
+                                                            appButton
+                                                            .targetWindowId
+                                                        )
                                                     } else {
                                                         root.launchApp(
                                                             modelData,
@@ -1591,16 +1724,16 @@ Scope {
                                             radius: 5
 
                                             color:
-                                                newMouse.containsMouse
-                                                    ? "#393e53"
-                                                    : "transparent"
+                                            newMouse.containsMouse
+                                            ? "#393e53"
+                                            : "transparent"
 
 
                                             Text {
                                                 anchors {
                                                     left: parent.left
                                                     verticalCenter:
-                                                        parent.verticalCenter
+                                                    parent.verticalCenter
 
                                                     leftMargin: 10
                                                 }
@@ -1610,7 +1743,7 @@ Scope {
                                                 color: "#bb97ee"
 
                                                 font.family:
-                                                    "JetBrains Mono"
+                                                "JetBrains Mono"
 
                                                 font.pixelSize: 9
                                                 font.bold: true
@@ -1625,7 +1758,7 @@ Scope {
                                                 hoverEnabled: true
 
                                                 cursorShape:
-                                                    Qt.PointingHandCursor
+                                                Qt.PointingHandCursor
 
 
                                                 onClicked: {
@@ -1651,22 +1784,22 @@ Scope {
                                             radius: 5
 
                                             opacity:
-                                                modelData.running
-                                                    ? 1.0
-                                                    : 0.35
+                                            modelData.running
+                                            ? 1.0
+                                            : 0.35
 
                                             color:
-                                                minimizeMouse.containsMouse
-                                                && modelData.running
-                                                    ? "#393e53"
-                                                    : "transparent"
+                                            minimizeMouse.containsMouse
+                                            && modelData.running
+                                            ? "#393e53"
+                                            : "transparent"
 
 
                                             Text {
                                                 anchors {
                                                     left: parent.left
                                                     verticalCenter:
-                                                        parent.verticalCenter
+                                                    parent.verticalCenter
 
                                                     leftMargin: 10
                                                 }
@@ -1676,7 +1809,7 @@ Scope {
                                                 color: "#7e8294"
 
                                                 font.family:
-                                                    "JetBrains Mono"
+                                                "JetBrains Mono"
 
                                                 font.pixelSize: 9
                                                 font.bold: true
@@ -1689,24 +1822,24 @@ Scope {
                                                 anchors.fill: parent
 
                                                 enabled:
-                                                    modelData.running
+                                                modelData.running
 
                                                 hoverEnabled: true
 
                                                 cursorShape:
-                                                    enabled
-                                                        ? Qt.PointingHandCursor
-                                                        : Qt.ArrowCursor
+                                                enabled
+                                                ? Qt.PointingHandCursor
+                                                : Qt.ArrowCursor
 
 
                                                 onClicked: {
                                                     contextMenu.visible = false
 
                                                     root.windowService
-                                                        .minimize(
-                                                            appButton
-                                                                .targetWindowId
-                                                        )
+                                                    .minimize(
+                                                        appButton
+                                                        .targetWindowId
+                                                    )
                                                 }
                                             }
                                         }
@@ -1723,22 +1856,22 @@ Scope {
                                             radius: 5
 
                                             opacity:
-                                                modelData.running
-                                                    ? 1.0
-                                                    : 0.35
+                                            modelData.running
+                                            ? 1.0
+                                            : 0.35
 
                                             color:
-                                                closeMouse.containsMouse
-                                                && modelData.running
-                                                    ? "#55393d"
-                                                    : "transparent"
+                                            closeMouse.containsMouse
+                                            && modelData.running
+                                            ? "#55393d"
+                                            : "transparent"
 
 
                                             Text {
                                                 anchors {
                                                     left: parent.left
                                                     verticalCenter:
-                                                        parent.verticalCenter
+                                                    parent.verticalCenter
 
                                                     leftMargin: 10
                                                 }
@@ -1746,12 +1879,12 @@ Scope {
                                                 text: "CLOSE WINDOW"
 
                                                 color:
-                                                    modelData.running
-                                                        ? "#fb617e"
-                                                        : "#7e8294"
+                                                modelData.running
+                                                ? "#fb617e"
+                                                : "#7e8294"
 
                                                 font.family:
-                                                    "JetBrains Mono"
+                                                "JetBrains Mono"
 
                                                 font.pixelSize: 9
                                                 font.bold: true
@@ -1764,14 +1897,14 @@ Scope {
                                                 anchors.fill: parent
 
                                                 enabled:
-                                                    modelData.running
+                                                modelData.running
 
                                                 hoverEnabled: true
 
                                                 cursorShape:
-                                                    enabled
-                                                        ? Qt.PointingHandCursor
-                                                        : Qt.ArrowCursor
+                                                enabled
+                                                ? Qt.PointingHandCursor
+                                                : Qt.ArrowCursor
 
 
                                                 onClicked: {
@@ -1779,7 +1912,7 @@ Scope {
 
                                                     root.closeWindow(
                                                         appButton
-                                                            .targetWindowId
+                                                        .targetWindowId
                                                     )
                                                 }
                                             }
@@ -1818,12 +1951,12 @@ Scope {
                                 hoverEnabled: true
 
                                 acceptedButtons:
-                                    Qt.LeftButton
-                                    | Qt.MiddleButton
-                                    | Qt.RightButton
+                                Qt.LeftButton
+                                | Qt.MiddleButton
+                                | Qt.RightButton
 
                                 cursorShape:
-                                    Qt.PointingHandCursor
+                                Qt.PointingHandCursor
 
 
                                 onEntered: {
@@ -1898,13 +2031,13 @@ Scope {
                                     if (
                                         modelData.active
                                         && modelData.activeWindowId
-                                            !== ""
+                                        !== ""
                                     ) {
                                         root.windowService
-                                            .minimize(
-                                                modelData
-                                                    .activeWindowId
-                                            )
+                                        .minimize(
+                                            modelData
+                                            .activeWindowId
+                                        )
 
                                         return
                                     }
@@ -1920,10 +2053,10 @@ Scope {
                                         !== ""
                                     ) {
                                         root.windowService
-                                            .activate(
-                                                modelData
-                                                    .representativeId
-                                            )
+                                        .activate(
+                                            modelData
+                                            .representativeId
+                                        )
                                     }
                                 }
                             }
