@@ -50,12 +50,17 @@ ShellRoot {
         id: media
     }
 
+    WindowStatus {
+        id: windows
+    }
+
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
     }
 
-    BottomDock{
+    BottomDock {
+        windowService: windows
     }
 
     /*

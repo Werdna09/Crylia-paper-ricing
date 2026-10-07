@@ -2,94 +2,248 @@ import QtQuick
 import Quickshell
 import Quickshell.Widgets
 
-import org.kde.taskmanager as TaskManager
-
 
 Scope {
     id: root
+
+    required property var windowService
 
 
     /*
      * ============================================================
      * PINNED APPLICATIONS
-     *
-     * KDE TasksModel používá applications: URL.
-     * Běžící aplikace se k nim přidají automaticky.
      * ============================================================
      */
 
-    readonly property list<string> pinnedLaunchers: [
-        "applications:firefox.desktop",
-        "applications:org.kde.dolphin.desktop",
-        "applications:Alacritty.desktop"
+    property var pinnedApps: [
+        {
+            key: "firefox",
+
+            matchKeys: [
+                "firefox"
+            ],
+
+            lookup: "firefox",
+
+            fallbackIcon:
+                "firefox",
+
+            command: [
+                "firefox"
+            ]
+        },
+
+        {
+            key: "org.kde.dolphin",
+
+            matchKeys: [
+                "org.kde.dolphin",
+                "dolphin"
+            ],
+
+            lookup:
+                "org.kde.dolphin",
+
+            fallbackIcon:
+                "system-file-manager",
+
+            command: [
+                "dolphin"
+            ]
+        },
+
+        {
+            key: "alacritty",
+
+            matchKeys: [
+                "alacritty"
+            ],
+
+            lookup:
+                "Alacritty",
+
+            fallbackIcon:
+                "utilities-terminal",
+
+            command: [
+                "alacritty"
+            ]
+        }
     ]
 
 
     /*
      * ============================================================
-     * DESKTOP ENTRY LOOKUP
+     * HELPERS
      * ============================================================
      */
 
-    function desktopEntryFor(
-        appId,
-        launcherUrl,
-        appName
-    ) {
-        /*
-         * 1. Launcher URL
-         *
-         * applications:firefox.desktop
-         */
+    function normalizeKey(value) {
+        let result =
+            String(value || "").trim()
 
-        const launcher =
-            String(launcherUrl || "")
+
+        const slash =
+            result.lastIndexOf("/")
+
+
+        if (slash >= 0) {
+            result =
+                result.substring(
+                    slash + 1
+                )
+        }
+
 
         if (
-            launcher.startsWith(
-                "applications:"
-            )
+            result.toLowerCase()
+                .endsWith(".desktop")
         ) {
-            const id =
-                launcher.substring(
-                    "applications:".length
+            result =
+                result.substring(
+                    0,
+                    result.length - 8
                 )
+        }
 
-            let entry =
-                DesktopEntries.byId(id)
 
-            if (entry !== null) {
-                return entry
+        return result.toLowerCase()
+    }
+
+
+    function pinnedMatches(
+        pinned,
+        running
+    ) {
+        if (
+            pinned === null
+            || running === null
+        ) {
+            return false
+        }
+
+
+        const key =
+            root.normalizeKey(
+                running.key
+            )
+
+
+        const matches =
+            pinned.matchKeys || []
+
+
+        for (
+            let i = 0;
+            i < matches.length;
+            i++
+        ) {
+            if (
+                root.normalizeKey(
+                    matches[i]
+                ) === key
+            ) {
+                return true
             }
         }
 
 
+        return false
+    }
+
+
+    /*
+     * ============================================================
+     * DESKTOP ENTRY
+     * ============================================================
+     */
+
+    function desktopEntryFor(app) {
+        if (
+            app === null
+            || app === undefined
+        ) {
+            return null
+        }
+
+
+        const candidates = []
+
+
+        function addCandidate(value) {
+            const raw =
+                String(value || "").trim()
+
+
+            if (raw === "") {
+                return
+            }
+
+
+            if (
+                candidates.indexOf(raw)
+                === -1
+            ) {
+                candidates.push(raw)
+            }
+
+
+            /*
+             * Zkusíme variantu s .desktop
+             * i bez ní.
+             */
+
+            if (
+                !raw.toLowerCase()
+                    .endsWith(".desktop")
+            ) {
+                const withDesktop =
+                    raw + ".desktop"
+
+                if (
+                    candidates.indexOf(
+                        withDesktop
+                    ) === -1
+                ) {
+                    candidates.push(
+                        withDesktop
+                    )
+                }
+            }
+        }
+
+
+        addCandidate(
+            app.desktopFile
+        )
+
+        addCandidate(
+            app.lookup
+        )
+
+        addCandidate(
+            app.resourceClass
+        )
+
+        addCandidate(
+            app.key
+        )
+
+
         /*
-         * 2. KDE AppId
+         * Nejdřív exact DesktopEntry ID.
          */
 
-        const id =
-            String(appId || "")
-
-        if (id.length > 0) {
-            let exactId =
-                id.endsWith(".desktop")
-                    ? id
-                    : id + ".desktop"
-
-            let entry =
+        for (
+            let i = 0;
+            i < candidates.length;
+            i++
+        ) {
+            const entry =
                 DesktopEntries.byId(
-                    exactId
+                    candidates[i]
                 )
 
-            if (entry !== null) {
-                return entry
-            }
-
-
-            entry =
-                DesktopEntries
-                    .heuristicLookup(id)
 
             if (entry !== null) {
                 return entry
@@ -98,19 +252,339 @@ Scope {
 
 
         /*
-         * 3. Application name fallback
+         * Pak heuristika.
          */
 
-        const name =
-            String(appName || "")
+        const heuristicCandidates = [
+            app.desktopFile,
+            app.lookup,
+            app.resourceClass,
+            app.key,
+            app.caption
+        ]
 
-        if (name.length > 0) {
-            return DesktopEntries
-                .heuristicLookup(name)
+
+        for (
+            let i = 0;
+            i < heuristicCandidates.length;
+            i++
+        ) {
+            const value =
+                String(
+                    heuristicCandidates[i]
+                    || ""
+                )
+
+
+            if (value === "") {
+                continue
+            }
+
+
+            const entry =
+                DesktopEntries
+                    .heuristicLookup(
+                        value
+                    )
+
+
+            if (entry !== null) {
+                return entry
+            }
         }
 
 
         return null
+    }
+
+
+    /*
+     * ============================================================
+     * COMBINE PINNED + RUNNING APPLICATIONS
+     * ============================================================
+     */
+
+    function buildDockApps() {
+        const runningApps =
+            root.windowService.applications
+            || []
+
+        const result = []
+
+        const usedRunningKeys = {}
+
+
+        /*
+         * ========================================================
+         * PINNED
+         * ========================================================
+         */
+
+        for (
+            let p = 0;
+            p < root.pinnedApps.length;
+            p++
+        ) {
+            const pinned =
+                root.pinnedApps[p]
+
+            let running =
+                null
+
+
+            for (
+                let r = 0;
+                r < runningApps.length;
+                r++
+            ) {
+                if (
+                    root.pinnedMatches(
+                        pinned,
+                        runningApps[r]
+                    )
+                ) {
+                    running =
+                        runningApps[r]
+
+                    break
+                }
+            }
+
+
+            if (running !== null) {
+                usedRunningKeys[
+                    running.key
+                ] = true
+
+
+                result.push({
+                    key:
+                        pinned.key,
+
+                    pinned:
+                        true,
+
+                    running:
+                        true,
+
+                    active:
+                        running.active,
+
+                    minimized:
+                        running.minimized,
+
+                    windowCount:
+                        running.windowCount,
+
+                    activeWindowId:
+                        running.activeWindowId,
+
+                    representativeId:
+                        running.representativeId,
+
+                    desktopFile:
+                        running.desktopFile,
+
+                    resourceClass:
+                        running.resourceClass,
+
+                    caption:
+                        running.caption,
+
+                    lookup:
+                        pinned.lookup,
+
+                    fallbackIcon:
+                        pinned.fallbackIcon,
+
+                    command:
+                        pinned.command,
+
+                    signature:
+                        pinned.key
+                        + "|1|"
+                        + running.active
+                        + "|"
+                        + running.minimized
+                        + "|"
+                        + running.windowCount
+                        + "|"
+                        + running.activeWindowId
+                        + "|"
+                        + running.representativeId
+                })
+            } else {
+                result.push({
+                    key:
+                        pinned.key,
+
+                    pinned:
+                        true,
+
+                    running:
+                        false,
+
+                    active:
+                        false,
+
+                    minimized:
+                        false,
+
+                    windowCount:
+                        0,
+
+                    activeWindowId:
+                        "",
+
+                    representativeId:
+                        "",
+
+                    desktopFile:
+                        pinned.lookup,
+
+                    resourceClass:
+                        "",
+
+                    caption:
+                        "",
+
+                    lookup:
+                        pinned.lookup,
+
+                    fallbackIcon:
+                        pinned.fallbackIcon,
+
+                    command:
+                        pinned.command,
+
+                    signature:
+                        pinned.key
+                        + "|0"
+                })
+            }
+        }
+
+
+        /*
+         * ========================================================
+         * NON-PINNED RUNNING APPS
+         * ========================================================
+         */
+
+        for (
+            let i = 0;
+            i < runningApps.length;
+            i++
+        ) {
+            const running =
+                runningApps[i]
+
+
+            if (
+                usedRunningKeys[
+                    running.key
+                ]
+            ) {
+                continue
+            }
+
+
+            result.push({
+                key:
+                    running.key,
+
+                pinned:
+                    false,
+
+                running:
+                    true,
+
+                active:
+                    running.active,
+
+                minimized:
+                    running.minimized,
+
+                windowCount:
+                    running.windowCount,
+
+                activeWindowId:
+                    running.activeWindowId,
+
+                representativeId:
+                    running.representativeId,
+
+                desktopFile:
+                    running.desktopFile,
+
+                resourceClass:
+                    running.resourceClass,
+
+                caption:
+                    running.caption,
+
+                lookup:
+                    running.desktopFile,
+
+                fallbackIcon:
+                    "application-x-executable",
+
+                command:
+                    [],
+
+                signature:
+                    running.key
+                    + "|1|"
+                    + running.active
+                    + "|"
+                    + running.minimized
+                    + "|"
+                    + running.windowCount
+                    + "|"
+                    + running.activeWindowId
+                    + "|"
+                    + running.representativeId
+            })
+        }
+
+
+        return result
+    }
+
+
+    /*
+     * ============================================================
+     * LAUNCH
+     * ============================================================
+     */
+
+    function launchApp(
+        app,
+        desktopEntry
+    ) {
+        if (desktopEntry !== null) {
+            desktopEntry.execute()
+
+            root.windowService
+                .refreshSoon(650)
+
+            return
+        }
+
+
+        if (
+            app.command !== undefined
+            && app.command !== null
+            && app.command.length > 0
+        ) {
+            Quickshell.execDetached(
+                app.command
+            )
+
+
+            root.windowService
+                .refreshSoon(650)
+        }
     }
 
 
@@ -166,73 +640,6 @@ Scope {
 
             /*
              * ====================================================
-             * KDE TASK MODEL
-             *
-             * Tenhle model dělá většinu těžké práce:
-             *
-             * - launchery
-             * - běžící okna
-             * - matching launcher <-> window
-             * - aktivní aplikace
-             * - focus / activation
-             * - multiple windows
-             * ====================================================
-             */
-
-            TaskManager.TasksModel {
-                id: tasksModel
-
-
-                /*
-                 * Pinned apps.
-                 */
-
-                launcherList:
-                    root.pinnedLaunchers
-
-
-                /*
-                 * Běžící okno připnuté aplikace
-                 * převezme pozici launcheru.
-                 */
-
-                separateLaunchers: false
-
-                launchInPlace: true
-
-                hideActivatedLaunchers: false
-
-
-                /*
-                 * Jedna ikona za aplikaci.
-                 *
-                 * Více Firefox oken tedy nebude
-                 * znamenat 5 Firefox ikon.
-                 */
-
-                groupMode:
-                    TaskManager.TasksModel
-                        .GroupApplications
-
-                groupInline: false
-
-
-                /*
-                 * Zachováme pořadí pinned ikon.
-                 * Ostatní běžící aplikace se
-                 * objeví za nimi.
-                 */
-
-                sortMode:
-                    TaskManager.TasksModel
-                        .SortManual
-
-                taskReorderingEnabled: false
-            }
-
-
-            /*
-             * ====================================================
              * INPUT MASK
              * ====================================================
              */
@@ -241,8 +648,11 @@ Scope {
                 x: dockSurface.x
                 y: dockSurface.y
 
-                width: dockSurface.width
-                height: dockSurface.height
+                width:
+                    dockSurface.width
+
+                height:
+                    dockSurface.height
 
                 radius: 11
 
@@ -419,7 +829,29 @@ Scope {
 
                 /*
                  * =================================================
-                 * TASKS
+                 * APPLICATION MODEL
+                 * =================================================
+                 */
+
+                ScriptModel {
+                    id: dockModel
+
+                    values:
+                        root.buildDockApps()
+
+                    /*
+                     * Signature se změní pouze tehdy,
+                     * když se změní stav aplikace.
+                     */
+
+                    objectProp:
+                        "signature"
+                }
+
+
+                /*
+                 * =================================================
+                 * APPLICATIONS
                  * =================================================
                  */
 
@@ -432,101 +864,18 @@ Scope {
 
 
                     Repeater {
-                        model: tasksModel
+                        model: dockModel
 
 
                         delegate: Rectangle {
                             id: appButton
 
+                            required property var modelData
 
-                            /*
-                             * =====================================
-                             * MODEL
-                             * =====================================
-                             */
-
-                            required property int index
-
-
-                            readonly property bool active:
-                                Boolean(model.IsActive)
-
-
-                            readonly property bool running:
-                                Boolean(model.IsWindow)
-                                || Boolean(
-                                    model.IsGroupParent
-                                )
-
-
-                            readonly property bool launcher:
-                                Boolean(model.IsLauncher)
-
-
-                            readonly property bool pinned:
-                                launcher
-                                || Boolean(
-                                    model.HasLauncher
-                                )
-
-
-                            readonly property bool minimized:
-                                Boolean(
-                                    model.IsMinimized
-                                )
-
-
-                            readonly property bool attention:
-                                Boolean(
-                                    model
-                                        .IsDemandingAttention
-                                )
-
-
-                            readonly property int windowCount:
-                                Boolean(
-                                    model.IsGroupParent
-                                )
-                                    ? Number(
-                                        model.ChildCount || 0
-                                    )
-                                    : running
-                                        ? 1
-                                        : 0
-
-
-                            readonly property string appName:
-                                String(
-                                    model.AppName
-                                    || model.display
-                                    || model.AppId
-                                    || "Application"
-                                )
-
-
-                            readonly property string appId:
-                                String(
-                                    model.AppId || ""
-                                )
-
-
-                            readonly property string launcherUrl:
-                                String(
-                                    model.LauncherUrl || ""
-                                )
-
-
-                            /*
-                             * =====================================
-                             * DESKTOP ENTRY
-                             * =====================================
-                             */
 
                             readonly property var desktopEntry:
                                 root.desktopEntryFor(
-                                    appId,
-                                    launcherUrl,
-                                    appName
+                                    modelData
                                 )
 
 
@@ -534,14 +883,8 @@ Scope {
                                 desktopEntry !== null
                                 && desktopEntry.icon
                                     ? desktopEntry.icon
-                                    : "application-x-executable"
+                                    : modelData.fallbackIcon
 
-
-                            /*
-                             * =====================================
-                             * GEOMETRY
-                             * =====================================
-                             */
 
                             width: 54
                             height: 54
@@ -556,7 +899,7 @@ Scope {
                              */
 
                             color:
-                                active
+                                modelData.active
                                     ? "#393e53"
                                     : appMouse.containsMouse
                                         ? "#363a4e"
@@ -588,10 +931,11 @@ Scope {
                                         -2
                                 }
 
+
                                 implicitSize:
                                     appMouse.containsMouse
                                         ? 40
-                                        : active
+                                        : modelData.active
                                             ? 39
                                             : 36
 
@@ -603,6 +947,13 @@ Scope {
                                     )
 
 
+                                opacity:
+                                    modelData.running
+                                    && modelData.minimized
+                                        ? 0.60
+                                        : 1.0
+
+
                                 Behavior on implicitSize {
                                     NumberAnimation {
                                         duration: 110
@@ -611,12 +962,6 @@ Scope {
                                             Easing.OutCubic
                                     }
                                 }
-
-
-                                opacity:
-                                    appButton.minimized
-                                        ? 0.62
-                                        : 1.0
 
 
                                 Behavior on opacity {
@@ -630,15 +975,12 @@ Scope {
                             /*
                              * =====================================
                              * WINDOW COUNT
-                             *
-                             * Zobrazí se pouze pokud má aplikace
-                             * více než jedno okno.
                              * =====================================
                              */
 
                             Rectangle {
                                 visible:
-                                    appButton.windowCount > 1
+                                    modelData.windowCount > 1
 
                                 anchors {
                                     top: parent.top
@@ -648,10 +990,10 @@ Scope {
                                     rightMargin: 3
                                 }
 
-                                width: 17
-                                height: 17
+                                width: 18
+                                height: 18
 
-                                radius: 8.5
+                                radius: 9
 
                                 color: "#423f59"
 
@@ -660,7 +1002,7 @@ Scope {
                                     anchors.centerIn: parent
 
                                     text:
-                                        appButton.windowCount
+                                        modelData.windowCount
 
                                     color: "#bb97ee"
 
@@ -675,7 +1017,7 @@ Scope {
 
                             /*
                              * =====================================
-                             * RUNNING / ACTIVE INDICATOR
+                             * RUNNING INDICATOR
                              * =====================================
                              */
 
@@ -692,26 +1034,26 @@ Scope {
 
 
                                 width:
-                                    appButton.active
+                                    modelData.active
                                         ? 24
-                                        : appButton.running
+                                        : modelData.running
                                             ? 12
                                             : 0
 
+
                                 height:
-                                    appButton.active
+                                    modelData.active
                                         ? 3
                                         : 2
+
 
                                 radius: 2
 
 
                                 color:
-                                    appButton.attention
-                                        ? "#fb617e"
-                                        : appButton.active
-                                            ? "#6dcae8"
-                                            : "#bb97ee"
+                                    modelData.active
+                                        ? "#6dcae8"
+                                        : "#bb97ee"
 
 
                                 Behavior on width {
@@ -734,65 +1076,17 @@ Scope {
 
                             /*
                              * =====================================
-                             * ATTENTION MARKER
-                             * =====================================
-                             */
-
-                            Rectangle {
-                                visible:
-                                    appButton.attention
-
-                                anchors {
-                                    top: parent.top
-                                    left: parent.left
-
-                                    topMargin: 5
-                                    leftMargin: 5
-                                }
-
-                                width: 7
-                                height: 7
-
-                                radius: 3.5
-
-                                color: "#fb617e"
-
-
-                                SequentialAnimation on opacity {
-                                    running:
-                                        appButton.attention
-
-                                    loops:
-                                        Animation.Infinite
-
-
-                                    NumberAnimation {
-                                        to: 0.25
-                                        duration: 550
-                                    }
-
-
-                                    NumberAnimation {
-                                        to: 1
-                                        duration: 550
-                                    }
-                                }
-                            }
-
-
-                            /*
-                             * =====================================
                              * INPUT
                              *
                              * Left:
-                             *   launcher -> launch
-                             *   window   -> activate
                              *
-                             * Active window:
-                             *   minimize
+                             * neběží  -> spustit
+                             * běží    -> aktivovat
+                             * aktivní -> minimalizovat
                              *
                              * Middle:
-                             *   new instance
+                             *
+                             * nová instance
                              * =====================================
                              */
 
@@ -812,46 +1106,55 @@ Scope {
 
 
                                 onClicked: mouse => {
-                                    const modelIndex =
-                                        tasksModel.index(
-                                            appButton.index,
-                                            0
-                                        )
-
-
                                     /*
                                      * Middle click:
-                                     * always try new instance.
+                                     * new instance.
                                      */
 
                                     if (
                                         mouse.button
                                         === Qt.MiddleButton
                                     ) {
-                                        tasksModel
-                                            .requestNewInstance(
-                                                modelIndex
-                                            )
+                                        root.launchApp(
+                                            modelData,
+                                            appButton.desktopEntry
+                                        )
 
                                         return
                                     }
 
 
                                     /*
-                                     * Clicking active window:
-                                     * minimize it.
+                                     * Not running:
+                                     * launch.
                                      */
 
                                     if (
-                                        appButton.active
-                                        && appButton.running
-                                        && Boolean(
-                                            model.IsMinimizable
-                                        )
+                                        !modelData.running
                                     ) {
-                                        tasksModel
-                                            .requestToggleMinimized(
-                                                modelIndex
+                                        root.launchApp(
+                                            modelData,
+                                            appButton.desktopEntry
+                                        )
+
+                                        return
+                                    }
+
+
+                                    /*
+                                     * Active:
+                                     * minimize active window.
+                                     */
+
+                                    if (
+                                        modelData.active
+                                        && modelData.activeWindowId
+                                            !== ""
+                                    ) {
+                                        root.windowService
+                                            .minimize(
+                                                modelData
+                                                    .activeWindowId
                                             )
 
                                         return
@@ -859,17 +1162,20 @@ Scope {
 
 
                                     /*
-                                     * Otherwise:
-                                     *
-                                     * - launch pinned app
-                                     * - activate existing window
-                                     * - switch workspace if needed
+                                     * Running but inactive:
+                                     * activate representative window.
                                      */
 
-                                    tasksModel
-                                        .requestActivate(
-                                            modelIndex
-                                        )
+                                    if (
+                                        modelData.representativeId
+                                        !== ""
+                                    ) {
+                                        root.windowService
+                                            .activate(
+                                                modelData
+                                                    .representativeId
+                                            )
+                                    }
                                 }
                             }
                         }
