@@ -188,17 +188,13 @@ Scope {
             }
 
 
-            /*
-             * Zkusíme variantu s .desktop
-             * i bez ní.
-             */
-
             if (
                 !raw.toLowerCase()
                     .endsWith(".desktop")
             ) {
                 const withDesktop =
                     raw + ".desktop"
+
 
                 if (
                     candidates.indexOf(
@@ -231,7 +227,7 @@ Scope {
 
 
         /*
-         * Nejdřív exact DesktopEntry ID.
+         * Exact lookup.
          */
 
         for (
@@ -252,7 +248,7 @@ Scope {
 
 
         /*
-         * Pak heuristika.
+         * Heuristic fallback.
          */
 
         const heuristicCandidates = [
@@ -295,6 +291,44 @@ Scope {
 
 
         return null
+    }
+
+
+    /*
+     * ============================================================
+     * DISPLAY NAME
+     * ============================================================
+     */
+
+    function displayNameFor(
+        app,
+        desktopEntry
+    ) {
+        if (
+            desktopEntry !== null
+            && desktopEntry.name
+        ) {
+            return desktopEntry.name
+        }
+
+
+        if (
+            app.resourceClass !== undefined
+            && app.resourceClass !== ""
+        ) {
+            return app.resourceClass
+        }
+
+
+        if (
+            app.key !== undefined
+            && app.key !== ""
+        ) {
+            return app.key
+        }
+
+
+        return "Application"
     }
 
 
@@ -590,6 +624,34 @@ Scope {
 
     /*
      * ============================================================
+     * CLOSE WINDOW
+     * ============================================================
+     */
+
+    function closeWindow(windowId) {
+        const id =
+            String(windowId || "")
+
+
+        if (id === "") {
+            return
+        }
+
+
+        Quickshell.execDetached([
+            "kdotool",
+            "windowclose",
+            id
+        ])
+
+
+        root.windowService
+            .refreshSoon(350)
+    }
+
+
+    /*
+     * ============================================================
      * ONE DOCK PER SCREEN
      * ============================================================
      */
@@ -613,6 +675,14 @@ Scope {
              */
 
             property bool shown: false
+
+            /*
+             * Context menu je samostatný PopupWindow.
+             *
+             * Pokud je otevřený, nesmíme dock schovat jen proto,
+             * že kurzor opustil samotný dock.
+             */
+            property bool contextMenuOpen: false
 
 
             /*
@@ -709,6 +779,7 @@ Scope {
                     if (
                         !edgeHover.hovered
                         && !dockHover.hovered
+                        && !dockWindow.contextMenuOpen
                     ) {
                         dockWindow.shown = false
                     }
@@ -839,11 +910,6 @@ Scope {
                     values:
                         root.buildDockApps()
 
-                    /*
-                     * Signature se změní pouze tehdy,
-                     * když se změní stav aplikace.
-                     */
-
                     objectProp:
                         "signature"
                 }
@@ -873,9 +939,22 @@ Scope {
                             required property var modelData
 
 
+                            /*
+                             * =====================================
+                             * DESKTOP ENTRY
+                             * =====================================
+                             */
+
                             readonly property var desktopEntry:
                                 root.desktopEntryFor(
                                     modelData
+                                )
+
+
+                            readonly property string appName:
+                                root.displayNameFor(
+                                    modelData,
+                                    desktopEntry
                                 )
 
 
@@ -885,6 +964,19 @@ Scope {
                                     ? desktopEntry.icon
                                     : modelData.fallbackIcon
 
+
+                            readonly property string targetWindowId:
+                                modelData.active
+                                && modelData.activeWindowId !== ""
+                                    ? modelData.activeWindowId
+                                    : modelData.representativeId
+
+
+                            /*
+                             * =====================================
+                             * GEOMETRY
+                             * =====================================
+                             */
 
                             width: 54
                             height: 54
@@ -1076,17 +1168,645 @@ Scope {
 
                             /*
                              * =====================================
+                             * TOOLTIP TIMER
+                             * =====================================
+                             */
+
+                            Timer {
+                                id: tooltipTimer
+
+                                interval: 450
+                                repeat: false
+
+
+                                onTriggered: {
+                                    if (
+                                        appMouse.containsMouse
+                                        && !contextMenu.visible
+                                    ) {
+                                        tooltipPopup.visible = true
+                                    }
+                                }
+                            }
+
+
+                            /*
+                             * =====================================
+                             * TOOLTIP
+                             * =====================================
+                             */
+
+                            PopupWindow {
+                                id: tooltipPopup
+
+                                anchor.item:
+                                    appButton
+
+                                /*
+                                 * Popup se otevře NAD ikonou.
+                                 */
+
+                                anchor.rect.x:
+                                    Math.round(
+                                        (
+                                            appButton.width
+                                            - implicitWidth
+                                        ) / 2
+                                    )
+
+                                anchor.rect.y:
+                                    -8
+
+                                anchor.edges:
+                                    Edges.Top
+                                    | Edges.Left
+
+                                anchor.gravity:
+                                    Edges.Top
+                                    | Edges.Right
+
+                                anchor.adjustment:
+                                    PopupAdjustment.SlideX
+                                    | PopupAdjustment.FlipY
+
+
+                                implicitWidth: 220
+                                implicitHeight: 52
+
+                                color: "transparent"
+
+                                grabFocus: false
+
+                                visible: false
+
+
+                                Rectangle {
+                                    anchors.fill: parent
+
+                                    radius: 7
+
+                                    color: "#2b2d3a"
+
+                                    border.width: 1
+                                    border.color: "#3f445b"
+
+
+                                    Column {
+                                        anchors {
+                                            fill: parent
+
+                                            leftMargin: 12
+                                            rightMargin: 12
+                                            topMargin: 8
+                                            bottomMargin: 7
+                                        }
+
+                                        spacing: 3
+
+
+                                        Text {
+                                            width: parent.width
+
+                                            text:
+                                                appButton.appName
+
+                                            elide:
+                                                Text.ElideRight
+
+                                            color: "#e1e3e4"
+
+                                            font.family:
+                                                "JetBrains Mono"
+
+                                            font.pixelSize: 10
+                                            font.bold: true
+                                        }
+
+
+                                        Text {
+                                            width: parent.width
+
+                                            text:
+                                                modelData.running
+                                                    ? modelData.windowCount === 1
+                                                        ? "RUNNING · 1 WINDOW"
+                                                        : "RUNNING · "
+                                                            + modelData.windowCount
+                                                            + " WINDOWS"
+                                                    : "PINNED"
+
+                                            color:
+                                                modelData.active
+                                                    ? "#6dcae8"
+                                                    : modelData.running
+                                                        ? "#bb97ee"
+                                                        : "#7e8294"
+
+                                            font.family:
+                                                "JetBrains Mono"
+
+                                            font.pixelSize: 8
+                                            font.bold: true
+                                        }
+                                    }
+                                }
+                            }
+
+
+                            /*
+                             * =====================================
+                             * CONTEXT MENU
+                             * =====================================
+                             */
+
+                            PopupWindow {
+                                id: contextMenu
+
+                                anchor.item:
+                                    appButton
+
+                                anchor.rect.x:
+                                    Math.round(
+                                        (
+                                            appButton.width
+                                            - implicitWidth
+                                        ) / 2
+                                    )
+
+                                anchor.rect.y:
+                                    -8
+
+                                anchor.edges:
+                                    Edges.Top
+                                    | Edges.Left
+
+                                anchor.gravity:
+                                    Edges.Top
+                                    | Edges.Right
+
+                                anchor.adjustment:
+                                    PopupAdjustment.SlideX
+                                    | PopupAdjustment.FlipY
+
+
+                                implicitWidth: 210
+                                implicitHeight: 224
+
+                                color: "transparent"
+
+                                grabFocus: true
+
+                                visible: false
+
+
+                                onVisibleChanged: {
+                                    dockWindow.contextMenuOpen =
+                                        visible
+
+                                    if (visible) {
+                                        tooltipPopup.visible = false
+
+                                        dockWindow.showDock()
+                                    } else {
+                                        dockWindow.scheduleHide()
+                                    }
+                                }
+
+
+                                Rectangle {
+                                    anchors.fill: parent
+
+                                    radius: 9
+
+                                    color: "#2b2d3a"
+
+                                    border.width: 1
+                                    border.color: "#3f445b"
+
+
+                                    /*
+                                     * HEADER
+                                     */
+
+                                    Rectangle {
+                                        id: menuHeader
+
+                                        anchors {
+                                            top: parent.top
+                                            left: parent.left
+                                            right: parent.right
+
+                                            topMargin: 8
+                                            leftMargin: 8
+                                            rightMargin: 8
+                                        }
+
+                                        height: 42
+
+                                        radius: 6
+
+                                        color: "#333648"
+
+
+                                        Row {
+                                            anchors {
+                                                fill: parent
+
+                                                leftMargin: 10
+                                                rightMargin: 10
+                                            }
+
+                                            spacing: 8
+
+
+                                            IconImage {
+                                                anchors.verticalCenter:
+                                                    parent.verticalCenter
+
+                                                implicitSize: 24
+
+                                                source:
+                                                    Quickshell.iconPath(
+                                                        appButton.iconName,
+                                                        "application-x-executable"
+                                                    )
+                                            }
+
+
+                                            Column {
+                                                anchors.verticalCenter:
+                                                    parent.verticalCenter
+
+                                                width:
+                                                    parent.width - 42
+
+                                                spacing: 1
+
+
+                                                Text {
+                                                    width: parent.width
+
+                                                    text:
+                                                        appButton.appName
+
+                                                    elide:
+                                                        Text.ElideRight
+
+                                                    color: "#e1e3e4"
+
+                                                    font.family:
+                                                        "JetBrains Mono"
+
+                                                    font.pixelSize: 10
+                                                    font.bold: true
+                                                }
+
+
+                                                Text {
+                                                    text:
+                                                        modelData.running
+                                                            ? modelData.windowCount
+                                                                + (
+                                                                    modelData.windowCount === 1
+                                                                        ? " WINDOW"
+                                                                        : " WINDOWS"
+                                                                )
+                                                            : "NOT RUNNING"
+
+                                                    color: "#7e8294"
+
+                                                    font.family:
+                                                        "JetBrains Mono"
+
+                                                    font.pixelSize: 7
+                                                    font.bold: true
+                                                }
+                                            }
+                                        }
+                                    }
+
+
+                                    /*
+                                     * ACTIONS
+                                     */
+
+                                    Column {
+                                        anchors {
+                                            top: menuHeader.bottom
+                                            left: parent.left
+                                            right: parent.right
+                                            bottom: parent.bottom
+
+                                            topMargin: 8
+                                            leftMargin: 8
+                                            rightMargin: 8
+                                            bottomMargin: 8
+                                        }
+
+                                        spacing: 4
+
+
+                                        /*
+                                         * OPEN / ACTIVATE
+                                         */
+
+                                        Rectangle {
+                                            width: parent.width
+                                            height: 34
+
+                                            radius: 5
+
+                                            color:
+                                                openMouse.containsMouse
+                                                    ? "#393e53"
+                                                    : "transparent"
+
+
+                                            Text {
+                                                anchors {
+                                                    left: parent.left
+                                                    verticalCenter:
+                                                        parent.verticalCenter
+
+                                                    leftMargin: 10
+                                                }
+
+                                                text:
+                                                    modelData.running
+                                                        ? "ACTIVATE"
+                                                        : "OPEN"
+
+                                                color: "#e1e3e4"
+
+                                                font.family:
+                                                    "JetBrains Mono"
+
+                                                font.pixelSize: 9
+                                                font.bold: true
+                                            }
+
+
+                                            MouseArea {
+                                                id: openMouse
+
+                                                anchors.fill: parent
+
+                                                hoverEnabled: true
+
+                                                cursorShape:
+                                                    Qt.PointingHandCursor
+
+
+                                                onClicked: {
+                                                    contextMenu.visible = false
+
+
+                                                    if (
+                                                        modelData.running
+                                                    ) {
+                                                        root.windowService
+                                                            .activate(
+                                                                appButton
+                                                                    .targetWindowId
+                                                            )
+                                                    } else {
+                                                        root.launchApp(
+                                                            modelData,
+                                                            appButton.desktopEntry
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+
+
+                                        /*
+                                         * NEW WINDOW
+                                         */
+
+                                        Rectangle {
+                                            width: parent.width
+                                            height: 34
+
+                                            radius: 5
+
+                                            color:
+                                                newMouse.containsMouse
+                                                    ? "#393e53"
+                                                    : "transparent"
+
+
+                                            Text {
+                                                anchors {
+                                                    left: parent.left
+                                                    verticalCenter:
+                                                        parent.verticalCenter
+
+                                                    leftMargin: 10
+                                                }
+
+                                                text: "NEW WINDOW"
+
+                                                color: "#bb97ee"
+
+                                                font.family:
+                                                    "JetBrains Mono"
+
+                                                font.pixelSize: 9
+                                                font.bold: true
+                                            }
+
+
+                                            MouseArea {
+                                                id: newMouse
+
+                                                anchors.fill: parent
+
+                                                hoverEnabled: true
+
+                                                cursorShape:
+                                                    Qt.PointingHandCursor
+
+
+                                                onClicked: {
+                                                    contextMenu.visible = false
+
+                                                    root.launchApp(
+                                                        modelData,
+                                                        appButton.desktopEntry
+                                                    )
+                                                }
+                                            }
+                                        }
+
+
+                                        /*
+                                         * MINIMIZE
+                                         */
+
+                                        Rectangle {
+                                            width: parent.width
+                                            height: 34
+
+                                            radius: 5
+
+                                            opacity:
+                                                modelData.running
+                                                    ? 1.0
+                                                    : 0.35
+
+                                            color:
+                                                minimizeMouse.containsMouse
+                                                && modelData.running
+                                                    ? "#393e53"
+                                                    : "transparent"
+
+
+                                            Text {
+                                                anchors {
+                                                    left: parent.left
+                                                    verticalCenter:
+                                                        parent.verticalCenter
+
+                                                    leftMargin: 10
+                                                }
+
+                                                text: "MINIMIZE"
+
+                                                color: "#7e8294"
+
+                                                font.family:
+                                                    "JetBrains Mono"
+
+                                                font.pixelSize: 9
+                                                font.bold: true
+                                            }
+
+
+                                            MouseArea {
+                                                id: minimizeMouse
+
+                                                anchors.fill: parent
+
+                                                enabled:
+                                                    modelData.running
+
+                                                hoverEnabled: true
+
+                                                cursorShape:
+                                                    enabled
+                                                        ? Qt.PointingHandCursor
+                                                        : Qt.ArrowCursor
+
+
+                                                onClicked: {
+                                                    contextMenu.visible = false
+
+                                                    root.windowService
+                                                        .minimize(
+                                                            appButton
+                                                                .targetWindowId
+                                                        )
+                                                }
+                                            }
+                                        }
+
+
+                                        /*
+                                         * CLOSE
+                                         */
+
+                                        Rectangle {
+                                            width: parent.width
+                                            height: 34
+
+                                            radius: 5
+
+                                            opacity:
+                                                modelData.running
+                                                    ? 1.0
+                                                    : 0.35
+
+                                            color:
+                                                closeMouse.containsMouse
+                                                && modelData.running
+                                                    ? "#55393d"
+                                                    : "transparent"
+
+
+                                            Text {
+                                                anchors {
+                                                    left: parent.left
+                                                    verticalCenter:
+                                                        parent.verticalCenter
+
+                                                    leftMargin: 10
+                                                }
+
+                                                text: "CLOSE WINDOW"
+
+                                                color:
+                                                    modelData.running
+                                                        ? "#fb617e"
+                                                        : "#7e8294"
+
+                                                font.family:
+                                                    "JetBrains Mono"
+
+                                                font.pixelSize: 9
+                                                font.bold: true
+                                            }
+
+
+                                            MouseArea {
+                                                id: closeMouse
+
+                                                anchors.fill: parent
+
+                                                enabled:
+                                                    modelData.running
+
+                                                hoverEnabled: true
+
+                                                cursorShape:
+                                                    enabled
+                                                        ? Qt.PointingHandCursor
+                                                        : Qt.ArrowCursor
+
+
+                                                onClicked: {
+                                                    contextMenu.visible = false
+
+                                                    root.closeWindow(
+                                                        appButton
+                                                            .targetWindowId
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+
+                            /*
+                             * =====================================
                              * INPUT
+                             * =====================================
                              *
-                             * Left:
+                             * LEFT:
                              *
                              * neběží  -> spustit
                              * běží    -> aktivovat
                              * aktivní -> minimalizovat
                              *
-                             * Middle:
+                             * MIDDLE:
                              *
                              * nová instance
+                             *
+                             * RIGHT:
+                             *
+                             * context menu
                              * =====================================
                              */
 
@@ -1100,15 +1820,45 @@ Scope {
                                 acceptedButtons:
                                     Qt.LeftButton
                                     | Qt.MiddleButton
+                                    | Qt.RightButton
 
                                 cursorShape:
                                     Qt.PointingHandCursor
 
 
+                                onEntered: {
+                                    tooltipTimer.restart()
+                                }
+
+
+                                onExited: {
+                                    tooltipTimer.stop()
+
+                                    tooltipPopup.visible = false
+                                }
+
+
                                 onClicked: mouse => {
                                     /*
-                                     * Middle click:
-                                     * new instance.
+                                     * RIGHT CLICK
+                                     */
+
+                                    if (
+                                        mouse.button
+                                        === Qt.RightButton
+                                    ) {
+                                        tooltipTimer.stop()
+
+                                        tooltipPopup.visible = false
+
+                                        contextMenu.visible = true
+
+                                        return
+                                    }
+
+
+                                    /*
+                                     * MIDDLE CLICK
                                      */
 
                                     if (
@@ -1125,8 +1875,8 @@ Scope {
 
 
                                     /*
-                                     * Not running:
-                                     * launch.
+                                     * LEFT CLICK:
+                                     * not running -> launch
                                      */
 
                                     if (
@@ -1142,8 +1892,7 @@ Scope {
 
 
                                     /*
-                                     * Active:
-                                     * minimize active window.
+                                     * Active -> minimize.
                                      */
 
                                     if (
@@ -1162,8 +1911,8 @@ Scope {
 
 
                                     /*
-                                     * Running but inactive:
-                                     * activate representative window.
+                                     * Running but inactive
+                                     * -> activate.
                                      */
 
                                     if (
